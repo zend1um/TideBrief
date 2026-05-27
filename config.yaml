@@ -1,0 +1,37 @@
+vault:
+  path: "E:/obsidian_vault/政治经济知识库"
+
+schedule:
+  time: "05:00"
+  timezone: "Asia/Shanghai"
+
+llm:
+  provider: "anthropic"
+  fast_model: "claude-haiku-4-5-20251001"
+  smart_model: "claude-sonnet-4-6"
+
+filter:
+  quality_threshold: 5
+  highlight_threshold: 8
+
+collectors:
+  domestic_official:
+    xinhua:
+      enabled: true
+      rss_url: "http://www.xinhuanet.com/politics/xhll.xml"
+    state_council:
+      enabled: false
+      url: "https://www.gov.cn/"
+    pbc:
+      enabled: false
+      url: "http://www.pbc.gov.cn/"
+  international_finance: {}
+  academic: {}
+  social_media: {}
+
+output:
+  daily_brief: true
+  single_articles: true
+  topic_aggregation:
+    enabled: true
+    min_articles: 5
