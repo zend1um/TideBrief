@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -m ' *)",
+      "Bash(conda --version)",
+      "Bash(/g/Miniconda/Scripts/conda create *)",
+      "Bash(git add *)"
+    ]
+  }
+}
