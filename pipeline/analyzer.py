@@ -2,6 +2,7 @@
 
 import json
 import logging
+import time
 import anthropic
 from models.article import Article
 
@@ -57,6 +58,8 @@ class Analyzer:
                     system=SYSTEM_PROMPT,
                     messages=[{"role": "user", "content": user_msg}],
                 )
+                if not response.content:
+                    raise ValueError("Empty response from LLM")
                 text = response.content[0].text
                 result = json.loads(text)
 
@@ -79,5 +82,8 @@ class Analyzer:
                     article.quality_score = 3
                     article.quality_reason = f"LLM API 错误: {e}"
                     break
+
+            if attempt < self.max_retries - 1:
+                time.sleep(2 ** attempt)
 
         return article

@@ -48,8 +48,10 @@ class Reporter:
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": f"今日文章列表：\n\n{article_list}"}],
             )
+            if not response.content:
+                raise ValueError("Empty response from LLM")
             result = json.loads(response.content[0].text)
             return result.get("overview", "分析暂缺"), result.get("learning_points", "无")
-        except (json.JSONDecodeError, anthropic.APIError, KeyError) as e:
+        except (json.JSONDecodeError, anthropic.APIError, IndexError) as e:
             log.error(f"Reporter generation failed: {e}")
             return f"LLM 分析暂不可用（{e}）", "无"

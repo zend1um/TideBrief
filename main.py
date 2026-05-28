@@ -72,6 +72,11 @@ def main():
     config = load_config(args.config)
     runner = build_runner(config)
 
+    if args.source:
+        runner.collectors = [c for c in runner.collectors if c.name == args.source]
+        if not runner.collectors:
+            log.warning(f"Collector '{args.source}' not found or not enabled")
+
     if args.command == "run":
         log.info("Running pipeline once...")
         asyncio.run(runner.run())

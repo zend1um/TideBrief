@@ -70,12 +70,12 @@ class ObsidianWriter:
         filepath = self.brief_dir / f"{date_str}.md"
 
         highlight_rows = "\n".join(
-            f"| {i+1} | {a.quality_score} | [[../信息条目/{date_str}/{a.source}-{a.id}\\|{a.title}]] | {a.source} |"
+            f"| {i+1} | {a.quality_score} | [[../信息条目/{date_str}/{a.source}-{a.id}|{a.title}]] | {a.source} |"
             for i, a in enumerate(highlights)
         )
 
         keep_rows = "\n".join(
-            f"| {i+1} | {a.quality_score} | [[../信息条目/{date_str}/{a.source}-{a.id}\\|{a.title}]] | {a.source} |"
+            f"| {i+1} | {a.quality_score} | [[../信息条目/{date_str}/{a.source}-{a.id}|{a.title}]] | {a.source} |"
             for i, a in enumerate(keeps)
         )
 
