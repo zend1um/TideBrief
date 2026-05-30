@@ -6,9 +6,9 @@ schedule:
   timezone: "Asia/Shanghai"
 
 llm:
-  provider: "anthropic"
-  fast_model: "claude-haiku-4-5-20251001"
-  smart_model: "claude-sonnet-4-6"
+  provider: "deepseek"
+  fast_model: "deepseek-chat"
+  smart_model: "deepseek-chat"
 
 mineru:
   model: "vlm"

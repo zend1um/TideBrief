@@ -1,5 +1,8 @@
 """入口：CLI 手动运行 + 定时调度"""
 
+from dotenv import load_dotenv
+load_dotenv()  # 自动加载 .env 中的 API keys
+
 import os
 import sys
 import asyncio
@@ -36,9 +39,15 @@ def load_config(config_path: str = "config.yaml") -> dict:
 
 def build_runner(config: dict) -> Runner:
     """根据配置组装管道组件"""
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY environment variable not set")
+    provider = config["llm"]["provider"]
+    if provider == "deepseek":
+        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        if not api_key:
+            raise RuntimeError("DEEPSEEK_API_KEY not set in .env")
+    else:
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY not set in .env")
 
     # Collector 注册（按配置启用）
     collectors = []
@@ -71,13 +80,14 @@ def build_runner(config: dict) -> Runner:
     vault_path = config["vault"]["path"]
     fetcher = Fetcher()
     cleaner = Cleaner()
-    analyzer = Analyzer(api_key=api_key, model=config["llm"]["fast_model"])
+    provider = config["llm"]["provider"]
+    analyzer = Analyzer(provider=provider, api_key=api_key, model=config["llm"]["fast_model"])
     article_filter = ArticleFilter(
         quality_threshold=config["filter"]["quality_threshold"],
         highlight_threshold=config["filter"]["highlight_threshold"],
     )
     writer = ObsidianWriter(vault_path)
-    reporter = Reporter(api_key=api_key, model=config["llm"]["smart_model"])
+    reporter = Reporter(provider=provider, api_key=api_key, model=config["llm"]["smart_model"])
 
     return Runner(
         collectors=collectors,

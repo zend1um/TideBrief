@@ -1,9 +1,10 @@
-"""LLM 单篇分析：翻译 + 摘要 + 政经常识解读 + 质量评分"""
+"""LLM 单篇分析：翻译 + 摘要 + 政经常识解读 + 质量评分
+支持 Anthropic 和 DeepSeek 两种后端"""
 
 import json
 import logging
 import time
-import anthropic
+import os
 from models.article import Article
 
 log = logging.getLogger("infoCollector")
@@ -40,15 +41,22 @@ SYSTEM_PROMPT = """你是一位政治经济学研究助手。你将收到一篇�
 class Analyzer:
     """LLM 驱动的文章分析器：翻译 + 分析"""
 
-    def __init__(self, api_key: str, model: str = "claude-haiku-4-5-20251001", max_retries: int = 3):
-        self.client = anthropic.Anthropic(api_key=api_key)
+    def __init__(self, provider: str = "deepseek", api_key: str = "",
+                 model: str = "deepseek-chat", max_retries: int = 3):
+        self.provider = provider
         self.model = model
         self.max_retries = max_retries
+        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+
+        if self.provider == "deepseek":
+            from openai import OpenAI
+            self.client = OpenAI(api_key=self.api_key, base_url="https://api.deepseek.com")
+        else:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=self.api_key)
 
     def analyze(self, article: Article) -> Article:
-        """对单篇文章进行 LLM 翻译和分析，填充 Article 的分析字段"""
         if not article.clean_content:
-            log.warning(f"No clean content for article {article.id}, skipping analysis")
             article.quality_score = 1
             article.quality_reason = "无可用内容"
             return article
@@ -57,16 +65,10 @@ class Analyzer:
 
         for attempt in range(self.max_retries):
             try:
-                response = self.client.messages.create(
-                    model=self.model,
-                    max_tokens=4096,
-                    system=SYSTEM_PROMPT,
-                    messages=[{"role": "user", "content": user_msg}],
-                )
-                if not response.content:
-                    raise ValueError("Empty response from LLM")
-                text = response.content[0].text
-                result = json.loads(text)
+                if self.provider == "deepseek":
+                    result = self._call_deepseek(user_msg)
+                else:
+                    result = self._call_anthropic(user_msg)
 
                 article.translated_content = result.get("translated_content", "")
                 article.summary = result.get("summary", "")
@@ -82,7 +84,7 @@ class Analyzer:
                 if attempt == self.max_retries - 1:
                     article.quality_score = 3
                     article.quality_reason = f"LLM 响应解析失败: {e}"
-            except anthropic.APIError as e:
+            except Exception as e:
                 log.warning(f"LLM API error for {article.id}, attempt {attempt+1}: {e}")
                 if attempt == self.max_retries - 1:
                     article.quality_score = 3
@@ -93,3 +95,27 @@ class Analyzer:
                 time.sleep(2 ** attempt)
 
         return article
+
+    def _call_deepseek(self, user_msg: str) -> dict:
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            max_tokens=4096,
+            temperature=0.3,
+        )
+        text = response.choices[0].message.content
+        return json.loads(text)
+
+    def _call_anthropic(self, user_msg: str) -> dict:
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=4096,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        if not response.content:
+            raise ValueError("Empty response from LLM")
+        return json.loads(response.content[0].text)
