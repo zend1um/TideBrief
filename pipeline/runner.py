@@ -29,6 +29,7 @@ class Runner:
         article_filter: ArticleFilter,
         writer: ObsidianWriter,
         reporter: Reporter,
+        vault_overrides: dict[str, str] | None = None,
     ):
         self.collectors = collectors
         self.fetcher = fetcher
@@ -37,6 +38,18 @@ class Runner:
         self.article_filter = article_filter
         self.writer = writer
         self.reporter = reporter
+        self.vault_overrides = vault_overrides or {}
+        # 按需创建的路由 writer 缓存
+        self._writers: dict[str, ObsidianWriter] = {}
+
+    def _get_writer(self, article: Article) -> ObsidianWriter:
+        """根据 article source 路由到对应 vault 的 writer"""
+        vault = self.vault_overrides.get(article.source)
+        if not vault:
+            return self.writer
+        if vault not in self._writers:
+            self._writers[vault] = ObsidianWriter(vault)
+        return self._writers[vault]
 
     async def run(self) -> FilterResult:
         """执行完整管道"""
@@ -67,7 +80,7 @@ class Runner:
         for a in articles:
             try:
                 if a.clean_content:
-                    self.writer.write_raw(a)
+                    self._get_writer(a).write_raw(a)
             except Exception as e:
                 log.error(f"Write raw failed for {a.id}: {e}")
 
@@ -83,15 +96,15 @@ class Runner:
         # 过滤
         result = self.article_filter.apply(articles)
 
-        # 写入 Obsidian Vault
+        # 写入 Obsidian Vault（按 source 路由到不同 vault）
         all_kept = result.highlight + result.keep
         for a in all_kept:
             try:
-                self.writer.write_article(a)
+                self._get_writer(a).write_article(a)
             except Exception as e:
                 log.error(f"Write article failed for {a.id}: {e}")
 
-        # 生成每日汇总
+        # 生成每日汇总（始终写入主 vault）
         if all_kept:
             try:
                 overview, learning_points = self.reporter.generate_overview(all_kept)

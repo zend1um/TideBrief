@@ -88,6 +88,7 @@ def build_runner(config: dict) -> Runner:
     )
     writer = ObsidianWriter(vault_path)
     reporter = Reporter(provider=provider, api_key=api_key, model=config["llm"]["smart_model"])
+    vault_overrides = config.get("vault", {}).get("overrides", {})
 
     return Runner(
         collectors=collectors,
@@ -97,6 +98,7 @@ def build_runner(config: dict) -> Runner:
         article_filter=article_filter,
         writer=writer,
         reporter=reporter,
+        vault_overrides=vault_overrides,
     )
 
 

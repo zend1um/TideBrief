@@ -1,5 +1,8 @@
 vault:
   path: "E:/obsidian_vault/政治经济知识库"
+  overrides:
+    arxiv: "E:/obsidian_vault/量化知识库"
+    # 后续量化研报源也放这里，如: eastmoney_quant: "E:/obsidian_vault/量化知识库"
 
 schedule:
   time: "05:00"
