@@ -48,6 +48,10 @@ collectors:
   academic:
     nber:
       enabled: true
+    cfr:
+      enabled: true
+    csis:
+      enabled: true
   social_media: {}
 
 output:

@@ -22,6 +22,8 @@ from collectors.international_finance.marketwatch import MarketWatchCollector
 from collectors.international_finance.ftchinese import FTChineseCollector
 from collectors.international_finance.projectsyndicate import ProjectSyndicateCollector
 from collectors.academic.nber import NBERCollector
+from collectors.academic.cfr import CFRCollector
+from collectors.academic.csis import CSISCollector
 from scheduler import CrawlScheduler
 
 
@@ -53,6 +55,10 @@ def build_runner(config: dict) -> Runner:
     cfg_academic = config.get("collectors", {}).get("academic", {})
     if cfg_academic.get("nber", {}).get("enabled", False):
         collectors.append(NBERCollector(cfg_academic["nber"]))
+    if cfg_academic.get("cfr", {}).get("enabled", False):
+        collectors.append(CFRCollector(cfg_academic["cfr"]))
+    if cfg_academic.get("csis", {}).get("enabled", False):
+        collectors.append(CSISCollector(cfg_academic["csis"]))
     # 后续 Collector 在此注册...
 
     vault_path = config["vault"]["path"]
