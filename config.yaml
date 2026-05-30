@@ -52,7 +52,13 @@ collectors:
       enabled: true
     csis:
       enabled: true
-  social_media: {}
+  social_media:
+    hackernews:
+      enabled: true
+    arxiv:
+      enabled: true
+      query: "cat:q-fin.*"
+      max_results: 25
 
 output:
   daily_brief: true

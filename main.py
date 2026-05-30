@@ -24,6 +24,8 @@ from collectors.international_finance.projectsyndicate import ProjectSyndicateCo
 from collectors.academic.nber import NBERCollector
 from collectors.academic.cfr import CFRCollector
 from collectors.academic.csis import CSISCollector
+from collectors.social_media.hackernews import HackerNewsCollector
+from collectors.social_media.arxiv import ArxivCollector
 from scheduler import CrawlScheduler
 
 
@@ -59,6 +61,11 @@ def build_runner(config: dict) -> Runner:
         collectors.append(CFRCollector(cfg_academic["cfr"]))
     if cfg_academic.get("csis", {}).get("enabled", False):
         collectors.append(CSISCollector(cfg_academic["csis"]))
+    cfg_social = config.get("collectors", {}).get("social_media", {})
+    if cfg_social.get("hackernews", {}).get("enabled", False):
+        collectors.append(HackerNewsCollector(cfg_social["hackernews"]))
+    if cfg_social.get("arxiv", {}).get("enabled", False):
+        collectors.append(ArxivCollector(cfg_social["arxiv"]))
     # 后续 Collector 在此注册...
 
     vault_path = config["vault"]["path"]
