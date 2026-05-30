@@ -33,6 +33,8 @@ collectors:
         - economy
     marketwatch:
       enabled: true
+    ftchinese:
+      enabled: true
   academic: {}
   social_media: {}
 
