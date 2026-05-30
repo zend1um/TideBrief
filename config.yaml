@@ -24,9 +24,9 @@ filter:
 
 collectors:
   domestic_official:
-    xinhua:
+    peopledaily:
       enabled: true
-      rss_url: "http://www.xinhuanet.com/politics/xhll.xml"
+      rss_url: "http://www.people.com.cn/rss/politics.xml"
     state_council:
       enabled: false
       url: "https://www.gov.cn/"

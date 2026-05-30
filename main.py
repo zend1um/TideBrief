@@ -19,7 +19,7 @@ from pipeline.reporter import Reporter
 from pipeline.runner import Runner
 from utils.logger import setup_logger
 from utils.obsidian import ObsidianWriter
-from collectors.domestic_official.xinhua import XinhuaCollector
+from collectors.domestic_official.peopledaily import PeopleDailyCollector
 from collectors.international_finance.cnbc import CNBCCollector
 from collectors.international_finance.marketwatch import MarketWatchCollector
 from collectors.international_finance.ftchinese import FTChineseCollector
@@ -52,8 +52,8 @@ def build_runner(config: dict) -> Runner:
     # Collector 注册（按配置启用）
     collectors = []
     cfg_domestic = config.get("collectors", {}).get("domestic_official", {})
-    if cfg_domestic.get("xinhua", {}).get("enabled", False):
-        collectors.append(XinhuaCollector(cfg_domestic["xinhua"]))
+    if cfg_domestic.get("peopledaily", {}).get("enabled", False):
+        collectors.append(PeopleDailyCollector(cfg_domestic["peopledaily"]))
     cfg_intl = config.get("collectors", {}).get("international_finance", {})
     if cfg_intl.get("cnbc", {}).get("enabled", False):
         collectors.append(CNBCCollector(cfg_intl["cnbc"]))

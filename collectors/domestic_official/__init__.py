@@ -1,1 +1,1 @@
-from .xinhua import XinhuaCollector
+from .peopledaily import PeopleDailyCollector
