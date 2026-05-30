@@ -45,7 +45,9 @@ collectors:
       enabled: true
     projectsyndicate:
       enabled: true
-  academic: {}
+  academic:
+    nber:
+      enabled: true
   social_media: {}
 
 output:
