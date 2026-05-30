@@ -63,6 +63,14 @@ class Runner:
             except Exception as e:
                 log.error(f"Clean failed for {a.id}: {e}")
 
+        # 原始存档：LLM处理前先保存清洗后的MD原文
+        for a in articles:
+            try:
+                if a.clean_content:
+                    self.writer.write_raw(a)
+            except Exception as e:
+                log.error(f"Write raw failed for {a.id}: {e}")
+
         # LLM 分析（逐个调用，避免并发限流）
         for a in articles:
             try:

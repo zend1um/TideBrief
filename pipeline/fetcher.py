@@ -24,6 +24,7 @@ class Fetcher:
             title=raw.title,
             raw_content=raw.raw_content,
             content_type=raw.content_type,
+            pub_date=raw.pub_date,
             crawl_time=raw.crawl_time,
         )
 

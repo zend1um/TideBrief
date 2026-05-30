@@ -14,9 +14,34 @@ class ObsidianWriter:
 
     def __init__(self, vault_path: str):
         self.vault_path = Path(vault_path)
+        self.raw_dir = self.vault_path / "原始存档"
         self.articles_dir = self.vault_path / "信息条目"
         self.brief_dir = self.vault_path / "每日简报"
         self.topic_dir = self.vault_path / "主题追踪"
+
+    def write_raw(self, article: Article) -> Path:
+        """写入原始存档 → 原始存档/YYYY-MM-DD/来源-id.md（LLM处理前的原文）"""
+        date_str = article.crawl_time.strftime("%Y-%m-%d")
+        out_dir = self.raw_dir / date_str
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = f"{article.source}-{article.id}.md"
+        filepath = out_dir / filename
+
+        pub = article.pub_date.strftime("%Y-%m-%d %H:%M") if article.pub_date else "未知"
+
+        post = frontmatter.Post(
+            f"# {article.title}\n\n{article.clean_content}\n",
+            source=article.source,
+            url=article.url,
+            published=pub,
+            crawled=article.crawl_time.strftime("%Y-%m-%d %H:%M"),
+            category=article.category,
+        )
+
+        filepath.write_text(frontmatter.dumps(post), encoding="utf-8")
+        log.info(f"Raw article saved: {filepath}")
+        return filepath
 
     def write_article(self, article: Article) -> Path:
         """写入单篇信息笔记 → 信息条目/YYYY-MM-DD/来源-id.md"""
@@ -46,9 +71,12 @@ class ObsidianWriter:
             f"- [[../../中国政经]] [[../../宏观经济学]]\n"
         )
 
+        pub = article.pub_date.strftime("%Y-%m-%d %H:%M") if article.pub_date else "未知"
+
         post = frontmatter.Post(
             "\n".join(body_parts),
             date=date_str,
+            published=pub,
             source=article.source,
             url=article.url,
             quality=article.quality_score,

@@ -12,6 +12,7 @@ class RawArticle:
     title: str
     raw_content: str       # 原始 HTML 或 API 返回文本
     content_type: str = "text/html"  # text/html, application/pdf, image/*
+    pub_date: datetime | None = None  # 原文发布时间
     crawl_time: datetime = field(default_factory=datetime.now)
 
     def to_article_id(self) -> str:
@@ -30,6 +31,7 @@ class Article:
     raw_content: str
     clean_content: str = ""
     content_type: str = "text/html"
+    pub_date: datetime | None = None  # 原文发布时间
     crawl_time: datetime = field(default_factory=datetime.now)
 
     # LLM 分析后填充
