@@ -35,6 +35,8 @@ collectors:
       enabled: true
     ftchinese:
       enabled: true
+    projectsyndicate:
+      enabled: true
   academic: {}
   social_media: {}
 
