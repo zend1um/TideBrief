@@ -1,53 +1,130 @@
-"""MinerU 转换适配器（预留接口）
+"""MinerU API v4 适配器：异步提交 → 轮询 → 下载结果
 
-当文章 content_type 为 application/pdf 或 image/* 时，调用 MinerU 转为 Markdown。
-MinerU 配置完成后，取消下方注释并填入实际路径。
+API 文档: https://mineru.net/api/v4
+流程: POST /api/v4/extract/task → 轮询 GET task/{id} → 下载 full_zip_url → 提取 full.md
 """
 
 import logging
-import subprocess
-import tempfile
-from pathlib import Path
+import time
+import zipfile
+import io
+import os
+import requests
 from models.article import Article
 
 log = logging.getLogger("infoCollector")
 
+MINERU_BASE = "https://mineru.net/api/v4"
+
 
 class MinerUAdapter:
-    """MinerU PDF/图片 → Markdown 转换器（预留）"""
+    """MinerU PDF/图片/文档 → Markdown 转换器"""
 
-    def __init__(self, mineru_path: str = "mineru"):
-        self.mineru_path = mineru_path
+    def __init__(self, token: str = ""):
+        self.token = token or os.environ.get("MINERU_TOKEN", "")
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.token}",
+        }
 
     def supports(self, content_type: str) -> bool:
-        return content_type.startswith("application/pdf") or content_type.startswith("image/")
+        supported = (
+            "application/pdf" in content_type
+            or content_type.startswith("image/")
+            or any(ext in content_type for ext in ["doc", "docx", "ppt", "pptx", "xls", "xlsx"])
+        )
+        return supported
 
-    def convert(self, article: Article) -> Article:
-        """将非文本内容通过 MinerU 转为 Markdown"""
-        if not self.supports(article.content_type):
-            return article
+    def convert_url(self, url: str, model: str = "vlm") -> str:
+        """提交 URL 给 MinerU 异步解析，返回 Markdown
 
-        # 将原始内容写入临时文件
-        suffix = ".pdf" if "pdf" in article.content_type else ".png"
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-            # 注意：raw_content 在此场景下是 bytes 或下载的文件路径
-            # 此处为预留接口，需根据实际 MinerU 调用方式调整
-            tmp_path = Path(f.name)
+        Args:
+            url: 文件 URL（PDF/DOCX/图片等）
+            model: vlm（推荐）/ pipeline / MinerU-HTML（仅 HTML）
 
+        Returns:
+            Markdown 文本，失败返回空字符串
+        """
+        if not self.token:
+            log.warning("MinerU token not configured, skipping")
+            return ""
+
+        # 1. 提交任务
+        data = {"url": url, "model_version": model}
         try:
-            result = subprocess.run(
-                [self.mineru_path, str(tmp_path)],
-                capture_output=True, text=True, timeout=120,
+            resp = requests.post(
+                f"{MINERU_BASE}/extract/task",
+                headers=self.headers,
+                json=data,
+                timeout=30,
             )
-            if result.returncode == 0:
-                article.clean_content = result.stdout
-            else:
-                log.error(f"MinerU conversion failed: {result.stderr}")
-        except FileNotFoundError:
-            log.warning("MinerU not installed — skipping conversion")
+            resp.raise_for_status()
+            result = resp.json()
+            if result.get("code") != 0:
+                log.error(f"MinerU task creation failed: {result.get('msg')}")
+                return ""
+            task_id = result["data"]["task_id"]
+            log.info(f"MinerU task created: {task_id}")
         except Exception as e:
-            log.error(f"MinerU error: {e}")
-        finally:
-            tmp_path.unlink(missing_ok=True)
+            log.error(f"MinerU task creation error: {e}")
+            return ""
 
-        return article
+        # 2. 轮询等待完成（最长 5 分钟，间隔 5 秒）
+        full_zip_url = self._poll_task(task_id)
+        if not full_zip_url:
+            return ""
+
+        # 3. 下载 zip 并提取 full.md
+        return self._download_and_extract(full_zip_url)
+
+    def _poll_task(self, task_id: str, max_wait: int = 300, interval: int = 5) -> str:
+        """轮询任务状态，返回 full_zip_url"""
+        deadline = time.time() + max_wait
+        while time.time() < deadline:
+            try:
+                resp = requests.get(
+                    f"{MINERU_BASE}/extract/task/{task_id}",
+                    headers=self.headers,
+                    timeout=30,
+                )
+                resp.raise_for_status()
+                result = resp.json()
+                data = result.get("data", {})
+                state = data.get("state", "")
+
+                if state == "done":
+                    return data.get("full_zip_url", "")
+                elif state == "failed":
+                    log.error(f"MinerU task failed: {data.get('err_msg', 'unknown')}")
+                    return ""
+                else:
+                    log.debug(f"MinerU task {task_id}: {state}")
+            except Exception as e:
+                log.warning(f"MinerU poll error: {e}")
+
+            time.sleep(interval)
+
+        log.error(f"MinerU task {task_id} timed out after {max_wait}s")
+        return ""
+
+    def _download_and_extract(self, zip_url: str) -> str:
+        """下载 zip 包，提取 full.md"""
+        try:
+            resp = requests.get(zip_url, timeout=60)
+            resp.raise_for_status()
+
+            with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
+                # 查找 full.md（可能在子目录中）
+                for name in z.namelist():
+                    if name.endswith("full.md"):
+                        return z.read(name).decode("utf-8")
+                # 备选：查找任何 .md 文件
+                for name in z.namelist():
+                    if name.endswith(".md"):
+                        return z.read(name).decode("utf-8")
+
+                log.warning(f"MinerU zip has no .md files: {z.namelist()[:10]}")
+                return ""
+        except Exception as e:
+            log.error(f"MinerU download/extract error: {e}")
+            return ""

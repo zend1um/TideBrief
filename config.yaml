@@ -10,6 +10,14 @@ llm:
   fast_model: "claude-haiku-4-5-20251001"
   smart_model: "claude-sonnet-4-6"
 
+mineru:
+  model: "vlm"
+  poll_interval: 5
+  max_wait: 300
+
+cleaner:
+  engine: "markitdown"
+
 filter:
   quality_threshold: 5
   highlight_threshold: 8
