@@ -25,7 +25,12 @@ collectors:
     pbc:
       enabled: false
       url: "http://www.pbc.gov.cn/"
-  international_finance: {}
+  international_finance:
+    cnbc:
+      enabled: true
+      feeds:
+        - top
+        - economy
   academic: {}
   social_media: {}
 

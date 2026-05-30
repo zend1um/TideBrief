@@ -17,6 +17,7 @@ from pipeline.runner import Runner
 from utils.logger import setup_logger
 from utils.obsidian import ObsidianWriter
 from collectors.domestic_official.xinhua import XinhuaCollector
+from collectors.international_finance.cnbc import CNBCCollector
 from scheduler import CrawlScheduler
 
 
@@ -36,6 +37,9 @@ def build_runner(config: dict) -> Runner:
     cfg_domestic = config.get("collectors", {}).get("domestic_official", {})
     if cfg_domestic.get("xinhua", {}).get("enabled", False):
         collectors.append(XinhuaCollector(cfg_domestic["xinhua"]))
+    cfg_intl = config.get("collectors", {}).get("international_finance", {})
+    if cfg_intl.get("cnbc", {}).get("enabled", False):
+        collectors.append(CNBCCollector(cfg_intl["cnbc"]))
     # 后续 Collector 在此注册...
 
     vault_path = config["vault"]["path"]
