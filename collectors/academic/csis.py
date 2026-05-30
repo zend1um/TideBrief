@@ -1,6 +1,7 @@
 """CSIS RSS 采集器 — 战略与国际研究中心"""
 
 import feedparser
+from datetime import datetime, timezone
 from models.article import RawArticle
 from collectors.base import BaseCollector
 
@@ -21,6 +22,14 @@ class CSISCollector(BaseCollector):
                 title = entry.get("title", "").strip()
                 link = entry.get("link", "").strip()
                 description = entry.get("summary", entry.get("description", "")).strip()
+                pub_date = None
+                pub_parsed = entry.get("published_parsed", entry.get("updated_parsed"))
+                if pub_parsed:
+                    try:
+                        pub_date = datetime(*pub_parsed[:6], tzinfo=timezone.utc)
+                    except Exception:
+                        pass
+
                 if title and link:
                     articles.append(RawArticle(
                         source=self.name,
@@ -29,6 +38,7 @@ class CSISCollector(BaseCollector):
                         title=title,
                         raw_content=description,
                         content_type="text/html",
+                        pub_date=pub_date,
                     ))
         except Exception:
             pass

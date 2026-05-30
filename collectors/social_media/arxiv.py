@@ -2,6 +2,7 @@
 
 import httpx
 import feedparser
+from datetime import datetime, timezone
 from models.article import RawArticle
 from collectors.base import BaseCollector
 
@@ -36,6 +37,14 @@ class ArxivCollector(BaseCollector):
                 link = entry.get("id", entry.get("link", "")).strip()
                 summary = entry.get("summary", "").strip()
 
+                pub_date = None
+                pub_parsed = entry.get("published_parsed", entry.get("updated_parsed"))
+                if pub_parsed:
+                    try:
+                        pub_date = datetime(*pub_parsed[:6], tzinfo=timezone.utc)
+                    except Exception:
+                        pass
+
                 if title and link:
                     articles.append(RawArticle(
                         source=self.name,
@@ -44,6 +53,7 @@ class ArxivCollector(BaseCollector):
                         title=title,
                         raw_content=summary,
                         content_type="text/html",
+                        pub_date=pub_date,
                     ))
         except Exception:
             pass
