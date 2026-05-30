@@ -28,9 +28,8 @@ class Fetcher:
             crawl_time=raw.crawl_time,
         )
 
-        # RSS 已有正文摘要，且是 HTML 类型时，raw_content 可能已含足够信息
-        if raw.raw_content and raw.content_type == "text/html" and len(raw.raw_content) > 200:
-            article.raw_content = raw.raw_content
+        # RSS 已有正文摘要（>200字符），直接用，不发起 HTTP 请求
+        if raw.raw_content and len(raw.raw_content) > 200:
             return article
 
         # 否则发起 HTTP 请求获取完整正文
@@ -44,10 +43,15 @@ class Fetcher:
                     content_type = resp.headers.get("content-type", "")
                     article.raw_content = resp.text
                     article.content_type = "text/html" if "html" in content_type else content_type
-                    break
-                except httpx.HTTPError as e:
-                    log.warning(f"Fetch attempt {attempt+1}/{self.max_retries} failed for {raw.url}: {e}")
+                    return article
+                except httpx.HTTPStatusError as e:
+                    # 401/403 不会因为你重试就通过，直接放弃
+                    if e.response.status_code in (401, 403):
+                        return article
                     if attempt == self.max_retries - 1:
-                        raise
+                        return article
+                except httpx.HTTPError:
+                    if attempt == self.max_retries - 1:
+                        return article
 
         return article
