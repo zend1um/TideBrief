@@ -31,6 +31,8 @@ collectors:
       feeds:
         - top
         - economy
+    marketwatch:
+      enabled: true
   academic: {}
   social_media: {}
 

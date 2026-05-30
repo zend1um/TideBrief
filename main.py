@@ -18,6 +18,7 @@ from utils.logger import setup_logger
 from utils.obsidian import ObsidianWriter
 from collectors.domestic_official.xinhua import XinhuaCollector
 from collectors.international_finance.cnbc import CNBCCollector
+from collectors.international_finance.marketwatch import MarketWatchCollector
 from scheduler import CrawlScheduler
 
 
@@ -40,6 +41,8 @@ def build_runner(config: dict) -> Runner:
     cfg_intl = config.get("collectors", {}).get("international_finance", {})
     if cfg_intl.get("cnbc", {}).get("enabled", False):
         collectors.append(CNBCCollector(cfg_intl["cnbc"]))
+    if cfg_intl.get("marketwatch", {}).get("enabled", False):
+        collectors.append(MarketWatchCollector(cfg_intl["marketwatch"]))
     # 后续 Collector 在此注册...
 
     vault_path = config["vault"]["path"]
