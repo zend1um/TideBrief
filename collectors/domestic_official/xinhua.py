@@ -1,6 +1,6 @@
 """新华社 RSS 采集器"""
 
-import httpx
+import feedparser
 from models.article import RawArticle
 from collectors.base import BaseCollector
 
@@ -12,20 +12,14 @@ class XinhuaCollector(BaseCollector):
     DEFAULT_RSS = "http://www.xinhuanet.com/politics/xhll.xml"
 
     async def collect(self) -> list[RawArticle]:
-        rss_url = self.config.get("rss_url", self.DEFAULT_RSS)
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            resp = await client.get(rss_url)
-            resp.raise_for_status()
-
-        # 简单 XML 解析（用标准库 xml.etree）
-        import xml.etree.ElementTree as ET
-        root = ET.fromstring(resp.text)
-
         articles: list[RawArticle] = []
-        for item in root.iter("item"):
-            title = (item.findtext("title") or "").strip()
-            link = (item.findtext("link") or "").strip()
-            description = (item.findtext("description") or "").strip()
+        rss_url = self.config.get("rss_url", self.DEFAULT_RSS)
+
+        feed = feedparser.parse(rss_url)
+        for entry in feed.entries:
+            title = entry.get("title", "").strip()
+            link = entry.get("link", "").strip()
+            description = entry.get("summary", entry.get("description", "")).strip()
 
             if not title or not link:
                 continue

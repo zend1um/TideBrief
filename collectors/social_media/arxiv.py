@@ -1,11 +1,9 @@
 """arXiv q-fin Atom API 采集器 — 量化金融论文"""
 
 import httpx
-import xml.etree.ElementTree as ET
+import feedparser
 from models.article import RawArticle
 from collectors.base import BaseCollector
-
-ATOM_NS = "http://www.w3.org/2005/Atom"
 
 
 class ArxivCollector(BaseCollector):
@@ -25,30 +23,29 @@ class ArxivCollector(BaseCollector):
             f"&sortBy=submittedDate&sortOrder=descending"
         )
 
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True, verify=False) as client:
-            try:
+        try:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True, verify=False) as client:
                 resp = await client.get(api_url, headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
                 })
                 resp.raise_for_status()
-                root = ET.fromstring(resp.text)
+            feed = feedparser.parse(resp.text)
 
-                for entry in root.findall(f"{{{ATOM_NS}}}entry"):
-                    title = (entry.findtext(f"{{{ATOM_NS}}}title") or "").strip()
-                    link_el = entry.find(f"{{{ATOM_NS}}}id")
-                    link = link_el.text.strip() if link_el is not None and link_el.text else ""
-                    summary = (entry.findtext(f"{{{ATOM_NS}}}summary") or "").strip()
+            for entry in feed.entries:
+                title = entry.get("title", "").strip()
+                link = entry.get("id", entry.get("link", "")).strip()
+                summary = entry.get("summary", "").strip()
 
-                    if title and link:
-                        articles.append(RawArticle(
-                            source=self.name,
-                            category=self.category,
-                            url=link,
-                            title=title,
-                            raw_content=summary,
-                            content_type="text/html",
-                        ))
-            except Exception:
-                pass
+                if title and link:
+                    articles.append(RawArticle(
+                        source=self.name,
+                        category=self.category,
+                        url=link,
+                        title=title,
+                        raw_content=summary,
+                        content_type="text/html",
+                    ))
+        except Exception:
+            pass
 
         return articles
