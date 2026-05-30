@@ -33,20 +33,21 @@ class ObsidianWriter:
         )
         tag_links = " ".join(f"#{tag}" for tag in article.tags)
 
+        body_parts = []
+        if article.translated_content:
+            body_parts.append(f"## 📰 中文正文\n\n{article.translated_content}\n")
+        body_parts.append(f"> [!summary] 原文摘要\n> {article.summary}\n")
+        body_parts.append(f"> [!knowledge] 政经常识解读\n> {article.knowledge_analysis}\n")
+        body_parts.append(f"> [!impact] 影响分析\n> 待补充...\n")
+        body_parts.append(f"## 🔗 相关概念\n{concept_links}\n")
+        body_parts.append(
+            f"## 📎 相关笔记\n"
+            f"- [[../../每日简报/{date_str}|当日简报]]\n"
+            f"- [[../../中国政经]] [[../../宏观经济学]]\n"
+        )
+
         post = frontmatter.Post(
-            (
-                f"> [!summary] 原文摘要\n"
-                f"> {article.summary}\n\n"
-                f"> [!knowledge] 政经常识解读\n"
-                f"> {article.knowledge_analysis}\n\n"
-                f"> [!impact] 影响分析\n"
-                f"> 待补充...\n\n"
-                f"## 🔗 相关概念\n"
-                f"{concept_links}\n\n"
-                f"## 📎 相关笔记\n"
-                f"- [[../../每日简报/{date_str}|当日简报]]\n"
-                f"- [[../../中国政经]] [[../../宏观经济学]]\n"
-            ),
+            "\n".join(body_parts),
             date=date_str,
             source=article.source,
             url=article.url,

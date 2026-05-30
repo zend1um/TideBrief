@@ -33,6 +33,7 @@ class Article:
     crawl_time: datetime = field(default_factory=datetime.now)
 
     # LLM 分析后填充
+    translated_content: str = ""  # 翻译后的中文正文
     summary: str = ""
     knowledge_analysis: str = ""
     quality_score: int = 0
