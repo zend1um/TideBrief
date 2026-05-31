@@ -30,7 +30,7 @@ class ArxivCollector(BaseCollector):
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
                 })
                 resp.raise_for_status()
-            feed = feedparser.parse(resp.text)
+                feed = feedparser.parse(resp.text)
 
             for entry in feed.entries:
                 title = entry.get("title", "").strip()

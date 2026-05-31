@@ -1,5 +1,6 @@
 """人民网 RSS 采集器"""
 
+import httpx
 import feedparser
 from datetime import datetime, timezone
 from models.article import RawArticle
@@ -10,13 +11,22 @@ class PeopleDailyCollector(BaseCollector):
     name = "peopledaily"
     category = "A"
 
-    DEFAULT_RSS = "http://www.people.com.cn/rss/politics.xml"
+    DEFAULT_URL = "http://www.people.com.cn/rss/politics.xml"
 
     async def collect(self) -> list[RawArticle]:
         articles: list[RawArticle] = []
-        rss_url = self.config.get("rss_url", self.DEFAULT_RSS)
+        url = self.config.get("rss_url", self.DEFAULT_URL)
 
-        feed = feedparser.parse(rss_url)
+        try:
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True, verify=False) as client:
+                resp = await client.get(url, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                })
+                resp.raise_for_status()
+                feed = feedparser.parse(resp.text)
+        except Exception:
+            return articles
+
         for entry in feed.entries:
             title = entry.get("title", "").strip()
             link = entry.get("link", "").strip()
