@@ -5,7 +5,8 @@ vault:
     # 后续量化研报源也放这里，如: eastmoney_quant: "E:/obsidian_vault/量化知识库"
 
 schedule:
-  time: "05:00"
+  collect_time: "04:00"
+  morning_brief_time: "08:00"
   timezone: "Asia/Shanghai"
 
 llm:

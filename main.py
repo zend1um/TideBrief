@@ -125,7 +125,13 @@ def main():
         log.info("Done.")
     elif args.command == "schedule":
         log.info("Starting scheduler...")
-        scheduler = CrawlScheduler(runner, config["schedule"]["time"], config["schedule"]["timezone"])
+        scheduler = CrawlScheduler(
+            runner,
+            collect_time=config["schedule"]["collect_time"],
+            morning_time=config["schedule"]["morning_brief_time"],
+            timezone=config["schedule"]["timezone"],
+            vault_path=config["vault"]["path"],
+        )
         scheduler.start()
         try:
             import time

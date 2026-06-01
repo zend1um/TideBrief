@@ -75,6 +75,7 @@ class ObsidianWriter:
 
         post = frontmatter.Post(
             "\n".join(body_parts),
+            title=article.title,
             date=date_str,
             published=pub,
             source=article.source,
@@ -135,6 +136,37 @@ class ObsidianWriter:
 
         filepath.write_text(frontmatter.dumps(post), encoding="utf-8")
         log.info(f"Daily brief written: {filepath}")
+        return filepath
+
+    def write_morning_brief(self, date: datetime, highlights: list[Article],
+                            overview: str, learning_points: str) -> Path:
+        """写入晨报 → 每日简报/晨报-YYYY-MM-DD.md（8:00 推送用）"""
+        self.brief_dir.mkdir(parents=True, exist_ok=True)
+        date_str = date.strftime("%Y-%m-%d")
+        filepath = self.brief_dir / f"晨报-{date_str}.md"
+
+        rows = "\n".join(
+            f"| {i+1} | {a.quality_score} | [{a.title}](../信息条目/{date_str}/{a.source}-{a.id}.md) | {a.source} |"
+            for i, a in enumerate(highlights)
+        )
+
+        post = frontmatter.Post(
+            (
+                f"# {date_str} 晨报\n\n"
+                f"> 采集时间：{date_str} 04:00 | 生成时间：{date.strftime('%Y-%m-%d %H:%M')}\n\n"
+                f"## 📊 今日政经大事\n{overview}\n\n"
+                f"## 📚 要点速览\n{learning_points}\n\n"
+                f"## 🏆 重点文章\n"
+                f"| # | 评分 | 标题 | 来源 |\n|---|------|------|------|\n"
+                f"{rows}\n"
+            ),
+            date=date_str,
+            type="morning_brief",
+            article_count=len(highlights),
+        )
+
+        filepath.write_text(frontmatter.dumps(post), encoding="utf-8")
+        log.info(f"Morning brief written: {filepath}")
         return filepath
 
     def write_topic(self, topic_name: str, articles: list[Article], analysis: str) -> Path:
