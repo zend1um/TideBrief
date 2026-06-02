@@ -1,7 +1,8 @@
 """入口：CLI 手动运行 + 定时调度"""
 
 from dotenv import load_dotenv
-load_dotenv()  # 自动加载 .env 中的 API keys
+from pathlib import Path
+load_dotenv(Path(__file__).parent / ".env")  # 自动加载 .env 中的 API keys
 
 import os
 import sys
