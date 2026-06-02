@@ -108,13 +108,15 @@ class CrawlScheduler:
             return
 
         reporter = self.runner.reporter
-        overview, points = reporter.generate_overview(articles[:30])
+        brief = reporter.generate_morning_brief(articles[:40])
+        overview = brief.get("overview", "生成失败")
+        points = brief.get("learning_points", "无")
+        themes = brief.get("themes", "")
 
         writer = ObsidianWriter(str(vault))
-        # 链接指向采集日期目录（昨天）
         from datetime import datetime as dt
         crawl_dt = dt.strptime(crawl_date, "%Y-%m-%d")
-        writer.write_morning_brief(crawl_dt, articles[:20], overview, points)
+        writer.write_morning_brief(crawl_dt, articles[:20], overview, points, themes)
         log.info(f"Morning brief written: {vault / '每日简报' / f'晨报-{date_str}.md'}")
 
     def start(self):
