@@ -61,6 +61,7 @@ class Analyzer:
             article.quality_reason = "无可用内容"
             return article
 
+        log.info(f"Analyzing [{article.source}] {article.title[:50]}...")
         user_msg = f"标题：{article.title}\n\n正文：\n{article.clean_content}"
 
         for attempt in range(self.max_retries):
@@ -105,6 +106,7 @@ class Analyzer:
             ],
             max_tokens=4096,
             temperature=0.3,
+            timeout=60,
         )
         text = response.choices[0].message.content
         return json.loads(text)
