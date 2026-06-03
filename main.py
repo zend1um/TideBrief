@@ -25,6 +25,10 @@ from collectors.international_finance.cnbc import CNBCCollector
 from collectors.international_finance.marketwatch import MarketWatchCollector
 from collectors.international_finance.ftchinese import FTChineseCollector
 from collectors.international_finance.projectsyndicate import ProjectSyndicateCollector
+from collectors.international_finance.seekingalpha import SeekingAlphaCollector
+from collectors.international_finance.zerohedge import ZeroHedgeCollector
+from collectors.international_finance.bloomberg import BloombergCollector
+from collectors.international_finance.yahoofinance import YahooFinanceCollector
 from collectors.academic.nber import NBERCollector
 from collectors.academic.cfr import CFRCollector
 from collectors.academic.csis import CSISCollector
@@ -64,6 +68,14 @@ def build_runner(config: dict) -> Runner:
         collectors.append(FTChineseCollector(cfg_intl["ftchinese"]))
     if cfg_intl.get("projectsyndicate", {}).get("enabled", False):
         collectors.append(ProjectSyndicateCollector(cfg_intl["projectsyndicate"]))
+    if cfg_intl.get("seekingalpha", {}).get("enabled", False):
+        collectors.append(SeekingAlphaCollector(cfg_intl["seekingalpha"]))
+    if cfg_intl.get("zerohedge", {}).get("enabled", False):
+        collectors.append(ZeroHedgeCollector(cfg_intl["zerohedge"]))
+    if cfg_intl.get("bloomberg", {}).get("enabled", False):
+        collectors.append(BloombergCollector(cfg_intl["bloomberg"]))
+    if cfg_intl.get("yahoofinance", {}).get("enabled", False):
+        collectors.append(YahooFinanceCollector(cfg_intl["yahoofinance"]))
     cfg_academic = config.get("collectors", {}).get("academic", {})
     if cfg_academic.get("nber", {}).get("enabled", False):
         collectors.append(NBERCollector(cfg_academic["nber"]))

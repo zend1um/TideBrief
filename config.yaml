@@ -49,6 +49,14 @@ collectors:
       enabled: true
     projectsyndicate:
       enabled: true
+    seekingalpha:
+      enabled: true
+    zerohedge:
+      enabled: true
+    bloomberg:
+      enabled: true
+    yahoofinance:
+      enabled: true
   academic:
     nber:
       enabled: true
