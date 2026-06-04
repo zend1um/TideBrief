@@ -71,6 +71,16 @@ collectors:
       enabled: true
       query: "cat:q-fin.*"
       max_results: 25
+    twitter:
+      enabled: true
+      mirror: "https://nitter.net"
+      handles:
+        - ecb
+        - federalreserve
+        - BIS_org
+        - IMFNews
+        - Lagarde
+        - POTUS
 
 output:
   daily_brief: true

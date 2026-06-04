@@ -34,6 +34,7 @@ from collectors.academic.cfr import CFRCollector
 from collectors.academic.csis import CSISCollector
 from collectors.social_media.hackernews import HackerNewsCollector
 from collectors.social_media.arxiv import ArxivCollector
+from collectors.social_media.twitter_nitter import TwitterNitterCollector
 from scheduler import CrawlScheduler
 
 
@@ -88,6 +89,8 @@ def build_runner(config: dict) -> Runner:
         collectors.append(HackerNewsCollector(cfg_social["hackernews"]))
     if cfg_social.get("arxiv", {}).get("enabled", False):
         collectors.append(ArxivCollector(cfg_social["arxiv"]))
+    if cfg_social.get("twitter", {}).get("enabled", False):
+        collectors.append(TwitterNitterCollector(cfg_social["twitter"]))
     # 后续 Collector 在此注册...
 
     vault_path = config["vault"]["path"]
