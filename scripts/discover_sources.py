@@ -62,7 +62,7 @@ async def main():
         r = await test_source(name, url, cat)
         if r:
             results.append(r)
-            print(f"[OK] [{r['category']}] {name}: {r['articles']} articles — {r['sample'][:50]}")
+            print(f"[OK] [{r['category']}] {name}: {r['articles']} articles")
         else:
             print(f"[ERR] {name}")
 

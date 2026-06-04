@@ -139,7 +139,7 @@ class ObsidianWriter:
         return filepath
 
     def write_morning_brief(self, date: datetime, highlights: list[Article],
-                            overview: str, learning_points: str, themes: str = "") -> Path:
+                            overview: str, learning_points, themes: str = "") -> Path:
         """写入晨报 → 每日简报/晨报-YYYY-MM-DD.md（8:00 推送用，约5分钟阅读）"""
         self.brief_dir.mkdir(parents=True, exist_ok=True)
         date_str = date.strftime("%Y-%m-%d")
@@ -150,7 +150,29 @@ class ObsidianWriter:
             for i, a in enumerate(highlights)
         )
 
-        theme_section = f"## 🔭 重点关注方向\n{themes}\n\n" if themes else ""
+        # 格式化 themes（可能是 dict 列表）
+        theme_text = ""
+        if themes:
+            if isinstance(themes, list):
+                for t in themes:
+                    if isinstance(t, dict):
+                        theme_text += f"### {t.get('title', '')}\n{t.get('content', '')}\n\n"
+                    else:
+                        theme_text += f"{t}\n\n"
+            else:
+                theme_text = str(themes)
+        theme_section = f"## 🔭 重点关注方向\n{theme_text}\n" if theme_text else ""
+
+        # 格式化 learning_points（可能是 dict 列表）
+        points_text = ""
+        if isinstance(learning_points, list):
+            for i, p in enumerate(learning_points, 1):
+                if isinstance(p, dict):
+                    points_text += f"{i}. **{p.get('title', '')}**：{p.get('content', '')}\n"
+                else:
+                    points_text += f"{i}. {p}\n"
+        else:
+            points_text = str(learning_points)
 
         post = frontmatter.Post(
             (
@@ -158,7 +180,7 @@ class ObsidianWriter:
                 f"> 采集时间：{date_str} 04:00 | 生成时间：{date.strftime('%Y-%m-%d %H:%M')}\n\n"
                 f"## 📊 今日宏观主线\n{overview}\n\n"
                 f"{theme_section}"
-                f"## 📚 今日政经常识\n{learning_points}\n\n"
+                f"## 📚 今日投资要点\n{points_text}\n"
                 f"## 🏆 重点文章\n"
                 f"| # | 评分 | 标题 | 来源 |\n|---|------|------|------|\n"
                 f"{rows}\n"
