@@ -81,9 +81,9 @@ class Reporter:
 
         try:
             if self.provider == "deepseek":
-                result = self._call_deepseek_with_prompt(article_list, prompt, max_tokens=2048)
+                result = self._call_deepseek_with_prompt(article_list, prompt, max_tokens=4096)
             else:
-                result = self._call_anthropic_with_prompt(article_list, prompt, max_tokens=2048)
+                result = self._call_anthropic_with_prompt(article_list, prompt, max_tokens=4096)
             return result
         except Exception as e:
             log.error(f"Morning brief generation failed: {e}")
