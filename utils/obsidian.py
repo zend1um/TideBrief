@@ -150,7 +150,7 @@ class ObsidianWriter:
             for i, a in enumerate(highlights)
         )
 
-        # 格式化 themes（可能是 dict 列表）
+        # 格式化 themes（纯文本或列表）
         theme_text = ""
         if themes:
             if isinstance(themes, list):
@@ -161,9 +161,9 @@ class ObsidianWriter:
                         theme_text += f"{t}\n\n"
             else:
                 theme_text = str(themes)
-        theme_section = f"## 🔭 重点关注方向\n{theme_text}\n" if theme_text else ""
+        theme_section = f"## 🔭 重点关注方向\n\n{theme_text}\n" if theme_text else ""
 
-        # 格式化 learning_points（可能是 dict 列表）
+        # 格式化 learning_points（纯文本或列表）
         points_text = ""
         if isinstance(learning_points, list):
             for i, p in enumerate(learning_points, 1):
@@ -171,8 +171,10 @@ class ObsidianWriter:
                     points_text += f"{i}. **{p.get('title', '')}**：{p.get('content', '')}\n"
                 else:
                     points_text += f"{i}. {p}\n"
+        elif isinstance(learning_points, str) and learning_points.strip():
+            points_text = learning_points
         else:
-            points_text = str(learning_points)
+            points_text = str(learning_points) if learning_points else ""
 
         post = frontmatter.Post(
             (
