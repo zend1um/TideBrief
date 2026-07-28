@@ -9,3 +9,16 @@ server-logs/
 server-vault/
 *.db-shm
 *.db-wal
+
+# Local Claude / Codex assistant files
+.claude/
+.claude.json
+CLAUDE.md
+claude.md
+.codex/
+.codex-*
+CODEX.md
+codex.md
+.agents/
+AGENTS.md
+skills/
