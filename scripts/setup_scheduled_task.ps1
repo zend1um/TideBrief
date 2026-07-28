@@ -1,7 +1,7 @@
 # Windows 任务计划：每日 4:55 触发信息采集
 # 以管理员身份运行此脚本
 
-$TaskName = "InfoCollectorDailyCrawl"
+$TaskName = "TideBriefDailyCrawl"
 $Description = "每日 4:55 运行政治经济信息采集管道"
 $ScriptPath = "E:\proj\infoCollector\run.bat"
 

@@ -43,5 +43,32 @@ class Article:
     tags: list[str] = field(default_factory=list)
     concepts: list[str] = field(default_factory=list)
 
+    # 交易信号分析（0-10 分）。quality_score 保留用于兼容旧笔记，
+    # 新的排序以 ranking_score 为准。
+    prefilter_score: float = 0.0
+    trading_relevance: int = 0
+    market_impact_score: int = 0
+    actionability_score: int = 0
+    novelty_score: int = 0
+    confidence_score: int = 0
+    ranking_score: float = 0.0
+
+    event_key: str = ""
+    event_type: str = ""
+    affected_assets: list[str] = field(default_factory=list)
+    asset_impact: str = ""
+    time_horizon: str = ""
+    trading_logic: str = ""
+    priced_in: str = ""
+    counter_argument: str = ""
+    invalidation: str = ""
+    watch_signals: list[str] = field(default_factory=list)
+    review_metric: str = ""
+    review_symbol: str = ""
+    expected_direction: str = "observe"
+    review_horizon_days: int = 3
+    political_economy_lesson: str = ""
+    consensus_gap: str = ""
+
     def is_analyzed(self) -> bool:
-        return self.quality_score > 0
+        return self.quality_score > 0 or self.ranking_score > 0

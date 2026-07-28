@@ -24,7 +24,7 @@ class TwitterNitterCollector(BaseCollector):
         mirror = self.config.get("mirror", self.DEFAULT_MIRROR)
         handles = self.config.get("handles", self.DEFAULT_HANDLES)
 
-        async with httpx.AsyncClient(timeout=15, follow_redirects=True, verify=False) as client:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
             for handle in handles:
                 rss_url = f"{mirror}/{handle}/rss"
                 try:

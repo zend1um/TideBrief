@@ -10,8 +10,12 @@ from pipeline.fetcher import Fetcher
 from pipeline.cleaner import Cleaner
 from pipeline.analyzer import Analyzer
 from pipeline.filter import ArticleFilter, FilterResult
+from pipeline.prefilter import SignalPrefilter, PrefilterResult
+from pipeline.market import MarketDataProvider
+from pipeline.review_store import ThesisReviewStore
 from pipeline.reporter import Reporter
 from utils.obsidian import ObsidianWriter
+from utils.dashboard import write_dashboard_snapshot
 from models.article import Article, RawArticle
 
 log = logging.getLogger("infoCollector")
@@ -30,6 +34,13 @@ class Runner:
         writer: ObsidianWriter,
         reporter: Reporter,
         vault_overrides: dict[str, str] | None = None,
+        prefilter: SignalPrefilter | None = None,
+        market_provider: MarketDataProvider | None = None,
+        archive_raw: bool = False,
+        write_single_articles: bool = True,
+        generate_brief: bool = True,
+        dashboard_snapshot_path: str | None = None,
+        review_store: ThesisReviewStore | None = None,
     ):
         self.collectors = collectors
         self.fetcher = fetcher
@@ -39,6 +50,13 @@ class Runner:
         self.writer = writer
         self.reporter = reporter
         self.vault_overrides = vault_overrides or {}
+        self.prefilter = prefilter
+        self.market_provider = market_provider
+        self.archive_raw = archive_raw
+        self.write_single_articles = write_single_articles
+        self.generate_brief = generate_brief
+        self.dashboard_snapshot_path = dashboard_snapshot_path
+        self.review_store = review_store
         # 按需创建的路由 writer 缓存
         self._writers: dict[str, ObsidianWriter] = {}
 
@@ -59,11 +77,23 @@ class Runner:
         raw_articles = await self._collect_all()
         log.info(f"Collected {len(raw_articles)} raw articles")
 
+        # 先按标题、摘要和来源做透明预筛，再下载全文和调用 LLM。
+        if self.prefilter:
+            prefilter_result = self.prefilter.apply(raw_articles)
+        else:
+            prefilter_result = PrefilterResult(selected=raw_articles)
+        candidates = prefilter_result.selected
+        log.info(
+            f"Prefilter: {len(candidates)} candidates, {len(prefilter_result.rejected)} rejected, "
+            f"{len(prefilter_result.duplicates)} duplicates"
+        )
+
         # Fetch 完整内容
         articles: list[Article] = []
-        for raw in raw_articles:
+        for raw in candidates:
             try:
                 article = await self.fetcher.fetch(raw)
+                article.prefilter_score = prefilter_result.scores.get(article.id, 0.0)
                 articles.append(article)
             except Exception as e:
                 log.error(f"Fetch failed for {raw.source}:{raw.title}: {e}")
@@ -76,13 +106,14 @@ class Runner:
             except Exception as e:
                 log.error(f"Clean failed for {a.id}: {e}")
 
-        # 原始存档：LLM处理前先保存清洗后的MD原文
-        for a in articles:
-            try:
-                if a.clean_content:
-                    self._get_writer(a).write_raw(a)
-            except Exception as e:
-                log.error(f"Write raw failed for {a.id}: {e}")
+        # 原始全文默认不再全部落库，避免 Vault 再次成为信息垃圾场。
+        if self.archive_raw:
+            for a in articles:
+                try:
+                    if a.clean_content:
+                        self._get_writer(a).write_raw(a)
+                except Exception as e:
+                    log.error(f"Write raw failed for {a.id}: {e}")
 
         # LLM 分析（逐个调用，避免并发限流）
         for a in articles:
@@ -95,27 +126,70 @@ class Runner:
 
         # 过滤
         result = self.article_filter.apply(articles)
+        result.total_collected = len(raw_articles)
+        result.prefilter_rejected = len(prefilter_result.rejected)
+        result.duplicate_count = len(prefilter_result.duplicates)
 
         # 写入 Obsidian Vault（按 source 路由到不同 vault）
         all_kept = result.highlight + result.keep
-        for a in all_kept:
-            try:
-                self._get_writer(a).write_article(a)
-            except Exception as e:
-                log.error(f"Write article failed for {a.id}: {e}")
+        if self.write_single_articles:
+            for a in all_kept:
+                try:
+                    self._get_writer(a).write_article(a)
+                except Exception as e:
+                    log.error(f"Write article failed for {a.id}: {e}")
 
-        # 生成每日汇总（始终写入主 vault）
-        if all_kept:
+        market_snapshot = None
+        if self.market_provider:
             try:
-                overview, learning_points = self.reporter.generate_overview(all_kept)
-                self.writer.write_brief(
-                    datetime.now(), result.highlight, result.keep,
-                    result.discarded, overview, learning_points,
+                market_snapshot = await asyncio.to_thread(self.market_provider.fetch)
+            except Exception as e:
+                log.error(f"Market snapshot failed: {e}")
+
+        review_time = datetime.now().astimezone()
+        if self.review_store:
+            try:
+                self.review_store.capture_and_evaluate(result.highlight, market_snapshot, review_time)
+            except Exception as e:
+                log.error(f"Thesis review update failed: {e}")
+
+        # 无信号时也写一份明确的“空白日报”，避免用户误以为任务没运行。
+        if self.generate_brief:
+            try:
+                synthesis = self.reporter.generate_daily_brief(all_kept, market_snapshot)
+                overview = str(synthesis.get("market_regime", ""))
+                questions = synthesis.get("calibration_questions", [])
+                learning_points = (
+                    "\n".join(f"{index}. {item}" for index, item in enumerate(questions, 1))
+                    if isinstance(questions, list) else str(questions)
                 )
+                report_time = review_time
+                stats = {
+                    "total_collected": len(raw_articles),
+                    "prefilter_rejected": len(prefilter_result.rejected),
+                    "duplicates": len(prefilter_result.duplicates),
+                    "analyzed": len(articles),
+                    "displayed": len(all_kept),
+                }
+                self.writer.write_brief(
+                    report_time, result.highlight, result.keep,
+                    result.discarded, overview, learning_points,
+                    market_snapshot=market_snapshot,
+                    synthesis=synthesis,
+                    stats=stats,
+                )
+                if self.dashboard_snapshot_path:
+                    write_dashboard_snapshot(
+                        self.dashboard_snapshot_path, report_time, result,
+                        synthesis, market_snapshot, stats,
+                    )
             except Exception as e:
                 log.error(f"Report generation failed: {e}")
 
-        log.info(f"Pipeline complete: {len(result.highlight)} H / {len(result.keep)} K / {len(result.discarded)} D")
+        log.info(
+            f"Pipeline complete: {len(result.highlight)} signals / {len(result.keep)} context / "
+            f"{len(result.discarded)} analyzed but omitted"
+        )
         return result
 
     async def _collect_all(self) -> list[RawArticle]:

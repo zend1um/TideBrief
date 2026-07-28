@@ -1,5 +1,6 @@
 """统一 HTTP 抓取：对非 HTML 内容根据 Content-Type 路由到 MinerU"""
 
+import asyncio
 import logging
 import httpx
 from models.article import RawArticle, Article
@@ -50,8 +51,10 @@ class Fetcher:
                         return article
                     if attempt == self.max_retries - 1:
                         return article
+                    await asyncio.sleep(0.5 * (2 ** attempt))
                 except httpx.HTTPError:
                     if attempt == self.max_retries - 1:
                         return article
+                    await asyncio.sleep(0.5 * (2 ** attempt))
 
         return article
