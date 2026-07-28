@@ -17,7 +17,7 @@ class ZeroHedgeCollector(BaseCollector):
         articles: list[RawArticle] = []
         url = self.config.get("rss_url", self.DEFAULT_RSS)
         try:
-            async with httpx.AsyncClient(timeout=15, follow_redirects=True, verify=False) as client:
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
                 resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
                 resp.raise_for_status()
                 feed = feedparser.parse(resp.text)

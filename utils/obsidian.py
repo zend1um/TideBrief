@@ -61,9 +61,30 @@ class ObsidianWriter:
         body_parts = []
         if article.translated_content:
             body_parts.append(f"## 📰 中文正文\n\n{article.translated_content}\n")
-        body_parts.append(f"> [!summary] 原文摘要\n> {article.summary}\n")
-        body_parts.append(f"> [!knowledge] 政经常识解读\n> {article.knowledge_analysis}\n")
-        body_parts.append(f"> [!impact] 影响分析\n> 待补充...\n")
+        body_parts.append(f"> [!summary] 新增事实\n> {article.summary}\n")
+        body_parts.append(
+            "## 交易映射\n"
+            f"- **影响资产**：{'、'.join(article.affected_assets) or '不明确'}\n"
+            f"- **方向与条件**：{article.asset_impact or '不确定'}\n"
+            f"- **时间尺度**：{article.time_horizon or '不确定'}\n"
+            f"- **已定价 / 预期差**：{article.priced_in or '不确定'}\n"
+        )
+        body_parts.append(f"## 传导链\n{article.trading_logic or article.knowledge_analysis or '不明确'}\n")
+        body_parts.append(f"## 反方观点\n{article.counter_argument or '暂无独立反方论证'}\n")
+        body_parts.append(f"## 证伪条件\n{article.invalidation or '暂无明确证伪条件'}\n")
+        body_parts.append(
+            "## 复盘目标\n"
+            f"- **指标**：{article.review_metric or '人工复核'}"
+            f"{f'（{article.review_symbol}）' if article.review_symbol else ''}\n"
+            f"- **预期方向**：{article.expected_direction}\n"
+            f"- **复盘周期**：{article.review_horizon_days} 天\n"
+        )
+        if article.watch_signals:
+            body_parts.append("## 后续观察\n" + "\n".join(f"- {item}" for item in article.watch_signals) + "\n")
+        if article.political_economy_lesson:
+            body_parts.append(f"## 政经机制\n{article.political_economy_lesson}\n")
+        if article.consensus_gap:
+            body_parts.append(f"## 共识与二阶效应\n{article.consensus_gap}\n")
         body_parts.append(f"## 🔗 相关概念\n{concept_links}\n")
         body_parts.append(
             f"## 📎 相关笔记\n"
@@ -81,10 +102,20 @@ class ObsidianWriter:
             source=article.source,
             url=article.url,
             quality=article.quality_score,
+            ranking_score=article.ranking_score,
+            trading_relevance=article.trading_relevance,
+            market_impact=article.market_impact_score,
+            actionability=article.actionability_score,
+            novelty=article.novelty_score,
+            confidence=article.confidence_score,
             quality_reason=article.quality_reason,
             tags=article.tags,
             category=article.category,
             concepts=article.concepts,
+            event_key=article.event_key,
+            event_type=article.event_type,
+            affected_assets=article.affected_assets,
+            time_horizon=article.time_horizon,
         )
 
         filepath.write_text(frontmatter.dumps(post), encoding="utf-8")
@@ -93,50 +124,88 @@ class ObsidianWriter:
 
     def write_brief(self, date: datetime, highlights: list[Article],
                     keeps: list[Article], discarded: list[Article],
-                    overview: str, learning_points: str) -> Path:
-        """写入每日汇总笔记 → 每日简报/YYYY-MM-DD.md"""
+                    overview: str, learning_points: str,
+                    market_snapshot=None, synthesis: dict | None = None,
+                    stats: dict | None = None) -> Path:
+        """写入每日交易简报；只展示固定阅读预算内的信息。"""
         self.brief_dir.mkdir(parents=True, exist_ok=True)
         date_str = date.strftime("%Y-%m-%d")
         filepath = self.brief_dir / f"{date_str}.md"
 
-        highlight_rows = "\n".join(
-            f"| {i+1} | {a.quality_score} | [{a.title}](../信息条目/{date_str}/{a.source}-{a.id}.md) | {a.source} |"
-            for i, a in enumerate(highlights)
-        )
-
-        keep_rows = "\n".join(
-            f"| {i+1} | {a.quality_score} | [{a.title}](../信息条目/{date_str}/{a.source}-{a.id}.md) | {a.source} |"
-            for i, a in enumerate(keeps)
-        )
-
-        discarded_rows = "\n".join(
-            f"| {a.quality_score} | {a.title[:40]} | {a.quality_reason} |"
-            for a in discarded
-        )
+        synthesis = synthesis or {}
+        stats = stats or {}
+        market_text = market_snapshot.to_markdown() if market_snapshot else "> 未生成行情快照"
+        regime = synthesis.get("market_regime", overview) or overview
+        driver = synthesis.get("dominant_driver", "暂无足够证据")
+        cross_asset = synthesis.get("cross_asset_check", "暂无足够证据")
+        political_economy = synthesis.get("political_economy", "暂无")
+        questions = self._format_list(synthesis.get("calibration_questions", learning_points))
+        blind_spots = self._format_list(synthesis.get("blind_spots", []))
+        signal_cards = "\n\n".join(
+            self._signal_card(article, index, date_str) for index, article in enumerate(highlights, 1)
+        ) or "> 今天没有信息达到交易信号门槛。保持空白也是一种筛选。"
+        context_cards = "\n\n".join(
+            (
+                f"### [{article.title}](../信息条目/{date_str}/{article.source}-{article.id}.md)\n"
+                f"{article.political_economy_lesson or article.summary}"
+            )
+            for article in keeps
+        ) or "> 今日无额外背景阅读。"
+        total = stats.get("total_collected", len(highlights) + len(keeps) + len(discarded))
+        prefilter_rejected = stats.get("prefilter_rejected", 0)
+        duplicates = stats.get("duplicates", 0)
+        analyzed = stats.get("analyzed", len(highlights) + len(keeps) + len(discarded))
 
         post = frontmatter.Post(
             (
-                f"# {date_str} 每日政经简报\n\n"
-                f"## 📊 今日概览\n{overview}\n\n"
-                f"## 🏆 高价值文章（评分 ≥ 8）\n"
-                f"| # | 评分 | 标题 | 来源 |\n|---|------|------|------|\n"
-                f"{highlight_rows}\n\n"
-                f"## 📚 今日学习要点\n{learning_points}\n\n"
-                f"## 📋 一般信息（评分 5-7）\n"
-                f"| # | 评分 | 标题 | 来源 |\n|---|------|------|------|\n"
-                f"{keep_rows}\n\n"
-                f"## 🗑 已过滤信息\n"
-                f"| 评分 | 标题 | 原因 |\n|------|------|------|\n"
-                f"{discarded_rows}\n"
+                f"# {date_str} 每日交易简报\n\n"
+                f"> 阅读预算：约 3-5 分钟｜交易信号 {len(highlights)} 条｜背景阅读 {len(keeps)} 条\n\n"
+                f"## 市场温度计\n{market_text}\n\n"
+                f"## 今日主线\n{regime}\n\n"
+                f"- **主导定价因子**：{driver}\n"
+                f"- **跨资产验证**：{cross_asset}\n\n"
+                f"## 必看交易信号\n{signal_cards}\n\n"
+                f"## 政经框架（最多两条）\n{context_cards}\n\n"
+                f"## 盘感训练：明日复盘\n{questions or '- 暂无'}\n\n"
+                f"## 可能推翻主线的变量\n{blind_spots or '- 暂无'}\n\n"
+                f"## 今日可迁移的政经机制\n{political_economy}\n\n"
+                f"<details><summary>筛选统计</summary>\n\n"
+                f"采集 {total} 条 → 预筛/去重后分析 {analyzed} 条 → 展示 {len(highlights) + len(keeps)} 条；"
+                f"预筛排除 {prefilter_rejected} 条，重复事件 {duplicates} 条。\n\n"
+                f"</details>\n"
             ),
             date=date_str,
-            total_crawled=len(highlights) + len(keeps) + len(discarded),
+            type="trading_brief",
+            total_crawled=total,
+            analyzed=analyzed,
             after_filter=len(highlights) + len(keeps),
         )
 
         filepath.write_text(frontmatter.dumps(post), encoding="utf-8")
         log.info(f"Daily brief written: {filepath}")
         return filepath
+
+    @staticmethod
+    def _signal_card(article: Article, index: int, date_str: str) -> str:
+        link = f"../信息条目/{date_str}/{article.source}-{article.id}.md"
+        watches = "、".join(article.watch_signals) or "暂无"
+        return (
+            f"### {index}. [{article.title}]({link}) `综合 {article.ranking_score:.1f}`\n"
+            f"- **新增事实**：{article.summary or '摘要暂缺'}\n"
+            f"- **交易映射**：{article.asset_impact or '方向不确定'}（{article.time_horizon or '期限不确定'}）\n"
+            f"- **预期差**：{article.priced_in or '不确定'}\n"
+            f"- **反方观点**：{article.counter_argument or '暂缺'}\n"
+            f"- **证伪条件**：{article.invalidation or '暂缺'}\n"
+            f"- **盯盘变量**：{watches}"
+        )
+
+    @staticmethod
+    def _format_list(value) -> str:
+        if isinstance(value, str):
+            return value.strip()
+        if not isinstance(value, list):
+            return ""
+        return "\n".join(f"- {item}" for item in value if str(item).strip())
 
     def write_morning_brief(self, date: datetime, highlights: list[Article],
                             overview: str, learning_points, themes: str = "") -> Path:

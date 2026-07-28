@@ -8,11 +8,26 @@ schedule:
   collect_time: "04:00"
   morning_brief_time: "08:00"
   timezone: "Asia/Shanghai"
+  # 小服务器重启后，如果上次成功采集已过期，则立即补跑一次。
+  run_on_start_if_stale: true
+  stale_after_hours: 26
+
+calendar:
+  path: "ui/economic-calendar.json"
+  # 每周从 BLS 官方 iCalendar 校正美国非农、CPI 与 PPI 日期。
+  sync_enabled: true
+  sync_day_of_week: "sun"
+  sync_time: "03:30"
+  horizon_days: 370
+  bls_ics_url: "https://www.bls.gov/schedule/news_release/bls.ics"
+  bls_schedule_url: "https://www.bls.gov/schedule/2026/home.htm"
 
 llm:
   provider: "deepseek"
   fast_model: "deepseek-chat"
   smart_model: "deepseek-chat"
+  # 全文翻译会显著增加成本和阅读量；交易简报默认只保留新增事实和传导链。
+  include_full_translation: false
 
 mineru:
   model: "vlm"
@@ -25,6 +40,43 @@ cleaner:
 filter:
   quality_threshold: 5
   highlight_threshold: 8
+  relevance_threshold: 6
+  ranking_threshold: 6.2
+  actionability_threshold: 5
+  # 硬阅读预算：最多 6 条交易信号 + 2 条政经背景。
+  max_daily_items: 8
+  max_context_items: 2
+  event_dedupe_threshold: 84
+  prefilter:
+    min_score: 3.5
+    max_candidates: 24
+    max_per_source: 5
+    dedupe_threshold: 88
+    category_limits:
+      A: 5
+      B: 18
+      C: 4
+      D: 2
+    # 在这里加入持仓、行业、商品或地区，会获得最高预筛优先级。
+    # 示例: ["沪深300", "半导体", "铜", "宁德时代", "NVDA"]
+    focus_keywords: []
+
+market:
+  enabled: true
+  period: "10d"
+  symbols:
+    标普500: "^GSPC"
+    纳斯达克: "^IXIC"
+    恒生指数: "^HSI"
+    上证指数: "000001.SS"
+    美国10年期收益率: "^TNX"
+    美元指数: "DX-Y.NYB"
+    美元兑人民币: "CNY=X"
+    原油: "CL=F"
+    黄金: "GC=F"
+    铜: "HG=F"
+    比特币: "BTC-USD"
+    VIX: "^VIX"
 
 collectors:
   domestic_official:
@@ -48,7 +100,7 @@ collectors:
     ftchinese:
       enabled: true
     projectsyndicate:
-      enabled: true
+      enabled: false
     seekingalpha:
       enabled: true
     zerohedge:
@@ -59,16 +111,16 @@ collectors:
       enabled: true
   academic:
     nber:
-      enabled: true
+      enabled: false
     cfr:
-      enabled: true
+      enabled: false
     csis:
-      enabled: true
+      enabled: false
   social_media:
     hackernews:
-      enabled: true
+      enabled: false
     arxiv:
-      enabled: true
+      enabled: false
       query: "cat:q-fin.*"
       max_results: 25
     twitter:
@@ -84,7 +136,15 @@ collectors:
 
 output:
   daily_brief: true
+  dashboard_snapshot: "data/dashboard.json"
+  runtime_status: "data/runtime-status.json"
+  # 观点账本：记录信号出现时的行情基准，并在到期后自动检查方向是否兑现。
+  review_database: "data/thesis_reviews.db"
+  review_move_threshold_pct: 0.3
+  # 避免 04:00 日报与 08:00 晨报重复生成两份内容。
+  morning_brief: false
   single_articles: true
+  archive_raw: false
   topic_aggregation:
-    enabled: true
+    enabled: false
     min_articles: 5

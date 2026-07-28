@@ -40,7 +40,7 @@ CANDIDATES = [
 async def test_source(name: str, url: str, category: str) -> dict | None:
     """测试一个源是否可用"""
     try:
-        async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False) as c:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as c:
             resp = await c.get(url, headers={"User-Agent": "Mozilla/5.0"})
             resp.raise_for_status()
             feed = feedparser.parse(resp.text)

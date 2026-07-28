@@ -25,7 +25,7 @@ class ArxivCollector(BaseCollector):
         )
 
         try:
-            async with httpx.AsyncClient(timeout=30, follow_redirects=True, verify=False) as client:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
                 resp = await client.get(api_url, headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
                 })

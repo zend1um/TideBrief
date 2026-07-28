@@ -21,7 +21,7 @@ class CNBCCollector(BaseCollector):
         enabled_feeds = self.config.get("feeds", ["top", "economy"])
 
         try:
-            async with httpx.AsyncClient(timeout=15, follow_redirects=True, verify=False) as client:
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
                 for feed_name in enabled_feeds:
                     url = self.FEEDS.get(feed_name)
                     if not url:

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d0c">
+  <title>知潮 TideBrief · 每日交易简报</title>
+  <meta name="description" content="把政经信息压缩成每日可验证的交易信号。">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#today" aria-label="知潮 TideBrief 首页">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>知潮 <span>TIDEBRIEF</span></span>
+    </a>
+    <nav class="main-nav" aria-label="主导航">
+      <a class="nav-link active" href="#today">今日</a>
+      <a class="nav-link" href="#calendar">日历</a>
+      <a class="nav-link" href="#signals">信号</a>
+      <a class="nav-link" href="#review">复盘</a>
+      <a class="nav-link" href="#ledger">账本</a>
+    </nav>
+    <div class="top-actions">
+      <div class="system-status"><span class="status-dot"></span><span id="as-of">正在载入</span></div>
+      <button class="icon-button" id="refresh-button" type="button" aria-label="重新载入本地数据" title="重新载入本地数据">
+        <span aria-hidden="true">↻</span>
+      </button>
+      <button class="settings-button" id="open-settings" type="button">
+        <span aria-hidden="true">⌁</span> 关注设置
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero shell" id="today">
+      <div class="hero-kicker-row">
+        <div class="eyebrow"><span>DAILY TIDE</span><span id="brief-date">—</span></div>
+        <span class="demo-badge" id="demo-badge" hidden>示例数据 · 仅展示界面</span>
+      </div>
+      <div class="hero-grid">
+        <div>
+          <p class="overline">今天市场在交易什么</p>
+          <h1 id="regime-title">正在提取今日主线…</h1>
+        </div>
+        <div class="hero-summary">
+          <p id="dominant-driver">载入中</p>
+          <div class="read-budget">
+            <span><strong id="signal-count">—</strong> 条交易信号</span>
+            <i></i>
+            <span>预计 <strong id="reading-time">—</strong> 分钟</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="market-ribbon" aria-label="跨资产行情">
+      <div class="market-track shell" id="market-track">
+        <div class="market-skeleton"></div><div class="market-skeleton"></div><div class="market-skeleton"></div>
+      </div>
+    </section>
+
+    <section class="shell thesis-grid" aria-label="今日定价主线">
+      <article class="panel thesis-panel">
+        <div class="section-label"><span class="label-index">01</span><span>主导定价因子</span></div>
+        <div class="thesis-content">
+          <span class="pulse-icon" aria-hidden="true"><i></i></span>
+          <p id="driver-detail">—</p>
+        </div>
+      </article>
+      <article class="panel validation-panel">
+        <div class="section-label"><span class="label-index">02</span><span>跨资产验证</span></div>
+        <p id="cross-asset">—</p>
+        <div class="validation-key">
+          <span><i class="key-up"></i>同向验证</span>
+          <span><i class="key-mixed"></i>存在分歧</span>
+        </div>
+      </article>
+      <aside class="panel funnel-panel">
+        <div class="section-label"><span class="label-index">03</span><span>信息漏斗</span></div>
+        <div class="funnel" id="funnel">
+          <div><strong>—</strong><span>采集</span></div><b>›</b>
+          <div><strong>—</strong><span>分析</span></div><b>›</b>
+          <div class="funnel-final"><strong>—</strong><span>必看</span></div>
+        </div>
+        <p id="funnel-caption">每天只把有限注意力留给真正改变定价的信息。</p>
+      </aside>
+    </section>
+
+    <section class="shell calendar-section" id="calendar">
+      <div class="section-heading calendar-heading">
+        <div>
+          <p class="overline">GLOBAL RISK WINDOWS</p>
+          <h2>全球财经日历</h2>
+        </div>
+        <p>只保留会显著改变利率路径、增长与通胀预期或全球风险偏好的官方事件。</p>
+      </div>
+
+      <div class="calendar-toolbar" aria-label="财经日历筛选">
+        <div class="calendar-filter-group" id="calendar-region-filter">
+          <span>地区</span>
+          <button class="calendar-chip active" type="button" data-calendar-region="全部">全部</button>
+          <button class="calendar-chip" type="button" data-calendar-region="美国">美国</button>
+          <button class="calendar-chip" type="button" data-calendar-region="中国">中国</button>
+          <button class="calendar-chip" type="button" data-calendar-region="欧洲">欧洲</button>
+          <button class="calendar-chip" type="button" data-calendar-region="亚洲">亚洲</button>
+          <button class="calendar-chip" type="button" data-calendar-region="其他">其他</button>
+        </div>
+        <div class="calendar-filter-group" id="calendar-category-filter">
+          <span>类型</span>
+          <button class="calendar-chip active" type="button" data-calendar-category="全部">全部</button>
+          <button class="calendar-chip" type="button" data-calendar-category="央行">央行</button>
+          <button class="calendar-chip" type="button" data-calendar-category="通胀">通胀</button>
+          <button class="calendar-chip" type="button" data-calendar-category="就业">就业</button>
+          <button class="calendar-chip" type="button" data-calendar-category="增长">增长</button>
+        </div>
+        <div class="calendar-range-group" id="calendar-range-filter">
+          <button class="calendar-chip" type="button" data-calendar-range="30">30天</button>
+          <button class="calendar-chip active" type="button" data-calendar-range="90">90天</button>
+          <button class="calendar-chip" type="button" data-calendar-range="365">全年</button>
+          <a class="calendar-import" href="/api/calendar.ics" download>↓ 导入日历</a>
+        </div>
+      </div>
+
+      <div class="calendar-meta">
+        <span><i class="importance-dot level-three"></i>一级：可能驱动全球资产重定价</span>
+        <span><i class="importance-dot level-two"></i>二级：区域或交叉验证窗口</span>
+        <span id="calendar-updated">官方计划快照 · 北京时间</span>
+      </div>
+
+      <div class="calendar-next" id="calendar-next" aria-live="polite">
+        <div class="calendar-loading">正在载入下一风险窗口…</div>
+      </div>
+      <div class="calendar-list" id="calendar-list" aria-live="polite"></div>
+    </section>
+
+    <section class="shell content-grid" id="signals">
+      <div class="signal-column">
+        <div class="section-heading">
+          <div>
+            <p class="overline">MUST READ</p>
+            <h2>今日交易信号</h2>
+          </div>
+          <div class="filter-row" id="filter-row" aria-label="信号筛选">
+            <button class="filter-chip active" data-filter="全部" type="button">全部</button>
+            <button class="filter-chip" data-filter="宏观" type="button">宏观</button>
+            <button class="filter-chip" data-filter="政策" type="button">政策</button>
+            <button class="filter-chip" data-filter="地缘" type="button">地缘</button>
+            <button class="filter-chip" data-filter="公司" type="button">公司</button>
+          </div>
+        </div>
+        <div class="signal-list" id="signal-list" aria-live="polite"></div>
+      </div>
+
+      <aside class="side-column" id="review">
+        <section class="review-card">
+          <div class="review-card-head">
+            <div>
+              <p class="overline">CALIBRATION</p>
+              <h2>明日复盘</h2>
+            </div>
+            <span class="day-marker">T+1</span>
+          </div>
+          <p class="review-intro">先写下判断，再让价格告诉你错在哪里。</p>
+          <div class="question-list" id="question-list"></div>
+          <div class="completion-row">
+            <div class="completion-track"><i id="completion-bar"></i></div>
+            <span id="completion-text">0 / 0</span>
+          </div>
+        </section>
+
+        <section class="risk-card">
+          <div class="card-title-row"><h3>主线证伪清单</h3><span>RISK</span></div>
+          <ul id="blind-spots"></ul>
+        </section>
+
+        <section class="mechanism-card">
+          <div class="card-title-row"><h3>今日政经机制</h3><span>FRAME</span></div>
+          <p id="political-economy">—</p>
+        </section>
+      </aside>
+    </section>
+
+    <section class="shell ledger-section" id="ledger">
+      <div class="section-heading ledger-heading">
+        <div>
+          <p class="overline">DECISION JOURNAL</p>
+          <h2>观点账本</h2>
+        </div>
+        <p>系统记录信号出现时的行情基准，到期后自动检查方向；你也可以覆盖机器结论。</p>
+      </div>
+      <div class="ledger-summary" id="ledger-summary" aria-label="观点复盘统计"></div>
+      <div class="ledger-grid" id="ledger-list" aria-live="polite"></div>
+    </section>
+
+    <section class="shell context-section" id="context">
+      <div class="section-heading context-heading">
+        <div>
+          <p class="overline">MENTAL MODELS</p>
+          <h2>政经框架 · 最多两条</h2>
+        </div>
+        <p>不追逐每条新闻，只积累可以反复使用的解释框架。</p>
+      </div>
+      <div class="context-grid" id="context-grid"></div>
+    </section>
+  </main>
+
+  <footer class="footer shell">
+    <span>知潮 <span>TIDEBRIEF</span></span>
+    <p>信息不是优势。过滤、验证与复盘才是。</p>
+    <span id="footer-status">LOCAL · PRIVATE</span>
+  </footer>
+
+  <div class="modal-backdrop" id="settings-modal" hidden>
+    <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal-head">
+        <div><p class="overline">YOUR FOCUS</p><h2 id="settings-title">关注设置</h2></div>
+        <button class="modal-close" id="close-settings" type="button" aria-label="关闭设置">×</button>
+      </div>
+      <p class="modal-copy">持仓、行业和品种会获得最高预筛优先级。设置只保存在这台电脑。</p>
+
+      <form id="settings-form">
+        <label class="field-label" for="keyword-input">关注词</label>
+        <div class="keyword-editor" id="keyword-editor">
+          <div class="keyword-chips" id="keyword-chips"></div>
+          <input id="keyword-input" type="text" maxlength="40" placeholder="输入后按回车，例如：铜、NVDA、沪深300" autocomplete="off">
+        </div>
+        <p class="field-hint">最多 40 个。中文、英文、股票代码均可。</p>
+
+        <div class="range-field">
+          <div><label class="field-label" for="daily-limit">每日阅读上限</label><p>交易信号与背景阅读的总量。</p></div>
+          <div class="range-control"><input id="daily-limit" type="range" min="3" max="12" step="1"><output id="daily-limit-output">8</output></div>
+        </div>
+        <div class="range-field">
+          <div><label class="field-label" for="context-limit">其中背景阅读</label><p>用于训练政经框架，不要求立即可交易。</p></div>
+          <div class="range-control"><input id="context-limit" type="range" min="0" max="4" step="1"><output id="context-limit-output">2</output></div>
+        </div>
+
+        <div class="modal-status" id="modal-status" role="status"></div>
+        <div class="modal-actions">
+          <button class="button-secondary" id="cancel-settings" type="button">取消</button>
+          <button class="button-primary" type="submit">保存设置</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

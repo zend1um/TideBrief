@@ -1,0 +1,70 @@
+name: tidebrief
+
+x-tidebrief-common: &tidebrief-common
+  build:
+    context: .
+  image: tidebrief:local
+  restart: unless-stopped
+  init: true
+  environment:
+    TZ: Asia/Shanghai
+    INFOCOLLECTOR_CONFIG: /app/config.yaml
+    INFOCOLLECTOR_VAULT_PATH: /vault
+    INFOCOLLECTOR_DASHBOARD_PATH: /app/data/dashboard.json
+    INFOCOLLECTOR_REVIEW_DB: /app/data/thesis_reviews.db
+    INFOCOLLECTOR_RUNTIME_STATUS_PATH: /app/data/runtime-status.json
+    INFOCOLLECTOR_SETTINGS_PATH: /app/data/runtime-settings.json
+    INFOCOLLECTOR_CALENDAR_PATH: /app/data/economic-calendar.json
+    INFOCOLLECTOR_LOG_DIR: /app/logs
+    INFOCOLLECTOR_LOG_LEVEL: ${INFOCOLLECTOR_LOG_LEVEL:-INFO}
+    DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?请在 .env 中设置 DEEPSEEK_API_KEY}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    MINERU_TOKEN: ${MINERU_TOKEN:-}
+    HEALTHCHECKS_PING_URL: ${HEALTHCHECKS_PING_URL:-}
+    HTTP_PROXY: ${HTTP_PROXY:-}
+    HTTPS_PROXY: ${HTTPS_PROXY:-}
+    NO_PROXY: ${NO_PROXY:-127.0.0.1,localhost}
+    TIDEBRIEF_USERNAME: ${TIDEBRIEF_USERNAME:-}
+    TIDEBRIEF_PASSWORD: ${TIDEBRIEF_PASSWORD:-}
+  volumes:
+    - ./config.yaml:/app/config.yaml:ro
+    - tidebrief-data:/app/data
+    - tidebrief-logs:/app/logs
+    - tidebrief-vault:/vault
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  web:
+    <<: *tidebrief-common
+    command: ["python", "main.py", "ui", "--host", "0.0.0.0", "--port", "8765"]
+    ports:
+      - "${TIDEBRIEF_BIND:-127.0.0.1}:${TIDEBRIEF_PORT:-8765}:8765"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/health', timeout=5)"
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 20s
+
+  scheduler:
+    <<: *tidebrief-common
+    command: ["python", "main.py", "schedule"]
+    healthcheck:
+      test: ["CMD", "python", "scripts/healthcheck.py", "scheduler"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  tidebrief-data:
+  tidebrief-logs:
+  tidebrief-vault:
